@@ -1,10 +1,19 @@
-from django.contrib.gis.db import models
-from django.utils import timezone
-from .enums import DealStatusType, BuildingType, PropertyType, ContactType, \
-    DepositType, GenderType, TopRegionType, SubRegionType
+import uuid
 
 from django.conf import settings
-import uuid
+from django.contrib.gis.db import models
+from django.utils import timezone
+
+from .enums import (
+    BuildingType,
+    ContactType,
+    DealStatusType,
+    DepositType,
+    GenderType,
+    PropertyType,
+    SubRegionType,
+    TopRegionType,
+)
 
 # Since django doesn't support general JSONField that utilize json type in all DB,
 # It's better to let user to determine which column type s/he want
@@ -13,17 +22,22 @@ if hasattr(settings, 'USE_NATIVE_JSONFIELD') and settings.USE_NATIVE_JSONFIELD:
 else:
     from jsonfield import JSONField as superJSONField
 
+
 class JSONField(superJSONField):
     pass
+
 
 def current_year():
     return timezone.localtime().year
 
+
 def current_month():
     return timezone.localtime().month
 
+
 def current_day():
     return timezone.localtime().day
+
 
 def current_stepped_hour():
     current = timezone.localtime()
@@ -38,14 +52,16 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
 
+
 class BaseTimeSeries(BaseModel):
     year = models.IntegerField(default=current_year)
     month = models.IntegerField(default=current_month)
     day = models.IntegerField(default=current_day)
     hour = models.IntegerField(default=current_stepped_hour)
-    
+
     class Meta:
         abstract = True
+
 
 class Vendor(models.Model):
     name = models.CharField(unique=True, max_length=200)
@@ -53,7 +69,8 @@ class Vendor(models.Model):
     site_url = models.URLField()
 
     class Meta:
-        db_table='vendor'
+        db_table = 'vendor'
+
 
 class SubRegion(BaseModel):
     name = models.CharField(null=True, unique=True, max_length=64)
@@ -61,30 +78,18 @@ class SubRegion(BaseModel):
     class Meta:
         db_table = 'sub_region'
 
+
 class Author(BaseModel):
-    uuid = models.UUIDField(
-        default=uuid.uuid4,
-        primary_key=True
-    )
-    truth = models.CharField(
-        unique=True,
-        max_length=200,
-        null=True
-    )
+    uuid = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    truth = models.CharField(unique=True, max_length=200, null=True)
+
 
 class BaseHouse(models.Model):
-    top_region = models.IntegerField(
-        choices = [(tag, tag.value) for tag in TopRegionType],
-        null=True
-    )
-    sub_region = models.IntegerField(
-        choices = [(tag, tag.value) for tag in SubRegionType],
-        null=True
-    )
+    top_region = models.IntegerField(choices=[(tag, tag.value) for tag in TopRegionType], null=True)
+    sub_region = models.IntegerField(choices=[(tag, tag.value) for tag in SubRegionType], null=True)
     deal_time = models.DateTimeField(null=True)
     deal_status = models.IntegerField(
-        choices = [(tag, tag.value) for tag in DealStatusType],
-        default = DealStatusType.OPENED
+        choices=[(tag, tag.value) for tag in DealStatusType], default=DealStatusType.OPENED
     )
     n_day_deal = models.IntegerField(null=True)
     vendor = models.ForeignKey(Vendor, on_delete=models.PROTECT)
@@ -93,28 +98,19 @@ class BaseHouse(models.Model):
     # price related
     monthly_price = models.IntegerField(null=True)
     min_monthly_price = models.IntegerField(null=True)
-    deposit_type = models.IntegerField(
-        choices = [(tag, tag.value) for tag in DepositType],
-        null=True
-    )
+    deposit_type = models.IntegerField(choices=[(tag, tag.value) for tag in DepositType], null=True)
     n_month_deposit = models.FloatField(null=True)
     deposit = models.IntegerField(null=True)
-    is_require_management_fee = models.NullBooleanField(null=True)
+    is_require_management_fee = models.BooleanField(null=True)
     monthly_management_fee = models.IntegerField(null=True)
-    has_parking = models.NullBooleanField(null=True)
-    is_require_parking_fee = models.NullBooleanField(null=True)
+    has_parking = models.BooleanField(null=True)
+    is_require_parking_fee = models.BooleanField(null=True)
     monthly_parking_fee = models.IntegerField(null=True)
     per_ping_price = models.FloatField(null=True)
     # other basic info
-    building_type = models.IntegerField(
-        choices = [(tag, tag.value) for tag in BuildingType],
-        null=True
-    )
-    property_type = models.IntegerField(
-        choices = [(tag, tag.value) for tag in PropertyType],
-        null=True
-    )
-    is_rooftop = models.NullBooleanField(null=True)
+    building_type = models.IntegerField(choices=[(tag, tag.value) for tag in BuildingType], null=True)
+    property_type = models.IntegerField(choices=[(tag, tag.value) for tag in PropertyType], null=True)
+    is_rooftop = models.BooleanField(null=True)
     floor = models.IntegerField(null=True)
     total_floor = models.IntegerField(null=True)
     dist_to_highest_floor = models.IntegerField(null=True)
@@ -134,21 +130,15 @@ class BaseHouse(models.Model):
     living_functions = JSONField(null=True)
     # subway, bus, public_bike, train, hsr
     transportation = JSONField(null=True)
-    has_tenant_restriction = models.NullBooleanField(null=True)
-    has_gender_restriction = models.NullBooleanField(null=True)
-    gender_restriction = models.IntegerField(
-        choices = [(tag, tag.value) for tag in GenderType],
-        null=True
-    )
-    can_cook = models.NullBooleanField(null=True)
-    allow_pet = models.NullBooleanField(null=True)
-    has_perperty_registration = models.NullBooleanField(null=True)
+    has_tenant_restriction = models.BooleanField(null=True)
+    has_gender_restriction = models.BooleanField(null=True)
+    gender_restriction = models.IntegerField(choices=[(tag, tag.value) for tag in GenderType], null=True)
+    can_cook = models.BooleanField(null=True)
+    allow_pet = models.BooleanField(null=True)
+    has_perperty_registration = models.BooleanField(null=True)
     # undermined for now
     facilities = JSONField(null=True)
-    contact = models.IntegerField(
-        choices = [(tag, tag.value) for tag in ContactType],
-        null=True
-    )
+    contact = models.IntegerField(choices=[(tag, tag.value) for tag in ContactType], null=True)
     author = models.ForeignKey(Author, on_delete=models.PROTECT, null=True)
     agent_org = models.CharField(null=True, max_length=256)
     imgs = JSONField(null=True)
@@ -157,36 +147,30 @@ class BaseHouse(models.Model):
     class Meta:
         abstract = True
 
-class House(BaseHouse, BaseModel):
 
+class House(BaseHouse, BaseModel):
     class Meta:
-        db_table='house'
+        db_table = 'house'
         indexes = [
             models.Index(fields=['crawled_at']),
         ]
-        unique_together = (
-            ('vendor', 'vendor_house_id'),
-        )
+        unique_together = (('vendor', 'vendor_house_id'),)
+
 
 class HouseEtc(BaseModel):
-    house = models.OneToOneField(
-        House,
-        on_delete=models.CASCADE,
-        primary_key=True,
-        related_name='etc')
+    house = models.OneToOneField(House, on_delete=models.CASCADE, primary_key=True, related_name='etc')
     # TODO: remove vendor* after we have inital migration
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
     vendor_house_id = models.CharField(max_length=128)
     detail_dict = JSONField(null=True)
     list_raw = models.TextField(null=True)
     detail_raw = models.TextField(null=True)
-    could_be_rooftop = models.NullBooleanField(null=True)
+    could_be_rooftop = models.BooleanField(null=True)
 
     class Meta:
         db_table = 'house_etc'
-        unique_together = (
-            ('vendor', 'vendor_house_id'),
-        )
+        unique_together = (('vendor', 'vendor_house_id'),)
+
 
 class RegionTS(BaseTimeSeries):
     top_region = models.CharField(max_length=16)
@@ -195,9 +179,8 @@ class RegionTS(BaseTimeSeries):
 
     class Meta:
         db_table = 'region_ts'
-        unique_together = (
-            ('year', 'month', 'day', 'hour', 'top_region'),
-        )
+        unique_together = (('year', 'month', 'day', 'hour', 'top_region'),)
+
 
 class HouseTS(BaseTimeSeries, BaseHouse):
     class Meta:
@@ -206,6 +189,4 @@ class HouseTS(BaseTimeSeries, BaseHouse):
             models.Index(fields=['created', 'deal_status']),
             models.Index(fields=['vendor', 'vendor_house_id', 'updated']),
         ]
-        unique_together = (
-            ('year', 'month', 'day', 'hour', 'vendor', 'vendor_house_id'),      
-        )
+        unique_together = (('year', 'month', 'day', 'hour', 'vendor', 'vendor_house_id'),)

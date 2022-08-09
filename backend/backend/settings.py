@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'rental.apps.RentalConfig',
     'crawlerrequest.apps.CrawlerConfig',
     'raven.contrib.django.raven_compat',
-    'django.contrib.gis'
+    'django.contrib.gis',
 ]
 
 MIDDLEWARE = [
@@ -85,7 +85,7 @@ DATABASES = {
     }
 }
 
-# for spatialite 4.2+ 
+# for spatialite 4.2+
 # ref: https://docs.djangoproject.com/en/1.10/ref/contrib/gis/install/spatialite/
 SPATIALITE_LIBRARY_PATH = 'mod_spatialite'
 
