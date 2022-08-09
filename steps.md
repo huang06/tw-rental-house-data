@@ -90,13 +90,13 @@ cp crawler/crawler/settings.sample.py crawler/crawler/settings.py
 ### Start the crawler
 
 ```bash
-make crawl
-```
+cd crawler
 
-### Export the dataset
-
-```bash
-python backend/manage.py export --help
+pipenv run scrapy crawl list591 -L INFO
+pipenv run scrapy crawl detail591 -L INFO
+pipenv run python ../backend/manage.py syncstateful -ts
+pipenv run python ../backend/manage.py statscheck
+pipenv run python ../backend/manage.py export -p
 ```
 
 ## Frontend
