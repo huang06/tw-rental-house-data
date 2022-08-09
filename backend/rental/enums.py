@@ -1,6 +1,6 @@
+import json
 from enum import IntEnum
 from os import path
-import json
 
 
 class DealStatusType(IntEnum):
@@ -8,20 +8,25 @@ class DealStatusType(IntEnum):
     NOT_FOUND = 1
     DEAL = 2
 
-UNKNOWN_ENUM = 0xffff
 
-BuildingType = IntEnum('BuildingType', [
-    ('公寓', 0),
-    ('透天', 1),
-    ('電梯大樓', 2),
-    ('華廈', 3),
-    ('辦公商業大樓', 4),
-    ('倉庫', 5),
-    ('店面（店鋪）', 6),
-    ('廠辦', 7),
-    ('工廠', 8),
-    ('農舍', 9)
-])
+UNKNOWN_ENUM = 0xFFFF
+
+BuildingType = IntEnum(
+    'BuildingType',
+    [
+        ('公寓', 0),
+        ('透天', 1),
+        ('電梯大樓', 2),
+        ('華廈', 3),
+        ('辦公商業大樓', 4),
+        ('倉庫', 5),
+        ('店面（店鋪）', 6),
+        ('廠辦', 7),
+        ('工廠', 8),
+        ('農舍', 9),
+    ],
+)
+
 
 class PropertyType(IntEnum):
     整層住家 = 0
@@ -55,8 +60,7 @@ class GenderType(IntEnum):
     其他 = 3
 
 
-tw_regions_path = '{}/data/tw_regions.json'.format(
-    path.dirname(path.realpath(__file__)))
+tw_regions_path = f'{path.dirname(path.realpath(__file__))}/data/tw_regions.json'
 
 with open(tw_regions_path) as regions_file:
     tw_regions = json.load(regions_file)
