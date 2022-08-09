@@ -1,11 +1,12 @@
 # shared setting across different environment
 # can be override by settings
-import sys
 import os
+import sys
+
 import django
 
 # Allow Scrapy to use Django
-sys.path.append('{}/../../backend'.format(os.path.dirname(os.path.realpath(__file__))))
+sys.path.append(f'{os.path.dirname(os.path.realpath(__file__))}/../../backend')
 os.environ['DJANGO_SETTINGS_MODULE'] = 'backend.settings'
 django.setup()
 
@@ -13,8 +14,8 @@ BOT_NAME = 'tw-rental-house-data'
 FEED_FORAMT = 'jsonlines'
 
 # For Python 3.7 compatibility
-# Ref: https://stackoverflow.com/questions/51522281/telnetconsole-enabled-setting-is-true-but-required-twisted-modules-failed-to-imp
-TELNETCONSOLE_ENABLED=False
+# Ref: https://stackoverflow.com/questions/51522281/telnetconsole-enabled-setting-is-true-but-required-twisted-modules-failed-to-imp  # noqa: E501
+TELNETCONSOLE_ENABLED = False
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
@@ -49,7 +50,7 @@ AUTOTHROTTLE_MAX_DELAY = 60
 # each remote server
 AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
 # Enable showing throttling stats for every response received:
-#AUTOTHROTTLE_DEBUG = False
+# AUTOTHROTTLE_DEBUG = False
 
 # Issue #21, ensure request/sec <= 1
 DOWNLOAD_DELAY = 1

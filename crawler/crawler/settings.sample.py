@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Scrapy settings for crawler project
 #
 # For simplicity, this file contains only settings considered important or
@@ -10,9 +8,6 @@
 #     https://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
 from .general_settings import *
-import scrapy
-import logging
-import os
 
 # Enable sentry to catch all error
 # SENTRY_DSN = 'https://your.sentry/dsn'
@@ -28,4 +23,3 @@ import os
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 # USER_AGENT = 'who-am-i (https://who.am.i.com)'
-

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Define your item pipelines here
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
@@ -7,23 +5,24 @@
 
 import logging
 import traceback
-from django.utils import timezone
-from rental.models import HouseTS, House, HouseEtc, Vendor, Author
-from rental.enums import DealStatusType
-from scrapy_twrh.items import GenericHouseItem, RawHouseItem
+
 from django.contrib.gis.geos import Point
+from django.utils import timezone
+from rental.enums import DealStatusType
+from rental.models import Author, House, HouseEtc, HouseTS, Vendor
+from scrapy_twrh.items import GenericHouseItem, RawHouseItem
+
 from crawler.utils import now_tuple
 
 
-class CrawlerPipeline(object):
-
+class CrawlerPipeline:
     def __init__(self) -> None:
         super().__init__()
         self.vendorMap = {}
         for vendor in Vendor.objects.all():
             self.vendorMap[vendor.name] = vendor
 
-    def item_vendor (self, item):
+    def item_vendor(self, item):
         return self.vendorMap[item['vendor']]
 
     def process_item(self, item, spider):
@@ -33,22 +32,18 @@ class CrawlerPipeline(object):
             if type(item) is RawHouseItem:
 
                 house, created = House.objects.get_or_create(
-                    vendor_house_id=item['house_id'],
-                    vendor=self.item_vendor(item)
+                    vendor_house_id=item['house_id'], vendor=self.item_vendor(item)
                 )
 
                 house_etc, created = HouseEtc.objects.get_or_create(
-                    house=house,
-                    vendor_house_id=item['house_id'],
-                    vendor=self.item_vendor(item)
+                    house=house, vendor_house_id=item['house_id'], vendor=self.item_vendor(item)
                 )
 
                 if 'raw' in item:
                     if item['is_list']:
                         house_etc.list_raw = item['raw']
                     else:
-                        house_etc.detail_raw = item['raw'].decode(
-                            'utf-8', 'backslashreplace')
+                        house_etc.detail_raw = item['raw'].decode('utf-8', 'backslashreplace')
 
                 if 'dict' in item and not item['is_list']:
                     house_etc.detail_dict = item['dict']
@@ -57,14 +52,16 @@ class CrawlerPipeline(object):
 
             elif type(item) is GenericHouseItem:
                 house_ts, created = HouseTS.objects.get_or_create(
-                    year=y, month=m, day=d, hour=h,
+                    year=y,
+                    month=m,
+                    day=d,
+                    hour=h,
                     vendor_house_id=item['vendor_house_id'],
-                    vendor=self.item_vendor(item)
+                    vendor=self.item_vendor(item),
                 )
 
                 house, created = House.objects.get_or_create(
-                    vendor_house_id=item['vendor_house_id'],
-                    vendor=self.item_vendor(item)
+                    vendor_house_id=item['vendor_house_id'], vendor=self.item_vendor(item)
                 )
 
                 to_db = item.copy()
@@ -74,9 +71,11 @@ class CrawlerPipeline(object):
                 # Issue #9
                 # if the house has been dealt, keep its deal_status
                 should_rollback_house_deal_status = False
-                if 'deal_status' in to_db and \
-                    to_db['deal_status'] == DealStatusType.NOT_FOUND and \
-                    house.deal_status == DealStatusType.DEAL:
+                if (
+                    'deal_status' in to_db
+                    and to_db['deal_status'] == DealStatusType.NOT_FOUND
+                    and house.deal_status == DealStatusType.DEAL
+                ):
                     should_rollback_house_deal_status = True
 
                 if 'rough_coordinate' in to_db:
@@ -99,8 +98,8 @@ class CrawlerPipeline(object):
                 house.save()
                 house_ts.save()
 
-        except:
-            logging.error('Pipeline got exception in item {}'.format(item))
+        except BaseException:
+            logging.error(f'Pipeline got exception in item {item}')
             traceback.print_exc()
 
         return item
