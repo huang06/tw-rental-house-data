@@ -28,10 +28,9 @@
 
 #### 爬蟲環境需求
 
-- Python3.8+
-- pip
-- pipenv
-- Docker V2, which supports `docker compose` command.
+- Python3 (tested with 3.10)
+- Docker V2:
+  - Supports `docker compose` command.
 
 #### 資料庫設定
 
