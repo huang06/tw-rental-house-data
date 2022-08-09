@@ -4,7 +4,6 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [packages]
-cffi = "*"
 django = "4.1"
 jsonfield = "*"
 raven = "*"
