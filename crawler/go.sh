@@ -1,7 +1,8 @@
 #!/bin/bash
+set -e
 
 now=`date +'%Y.%m.%d.%H%M'`
-mkdir -p ../logs
+# mkdir -p ../logs
 
 echo '===== LIST ====='
 pipenv run scrapy crawl list591 -L INFO

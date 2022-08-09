@@ -1,7 +1,8 @@
 bin
 lib
 include
-logs
+/logs/*
+!/logs/.gitkeep
 pip-selfcheck.json
 backup
 datas/*
