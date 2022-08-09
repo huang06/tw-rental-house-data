@@ -3,18 +3,15 @@ name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
 
-[dev-packages]
-pylint-django = "*"
-pylint = "*"
-pylint-plugin-utils = "*"
-
 [packages]
-cffi = "==1.13.2"
-django = "==2.1.15"
-jsonfield = "==2.0.2"
-raven = "==6.9.0"
-psycopg2-binary = "==2.8.6"
-scrapy-tw-rental-house = "==1.1.2"
+cffi = "*"
+django = "4.1"
+jsonfield = "*"
+raven = "*"
+psycopg2 = "2.9.3"
+scrapy-tw-rental-house = {editable = true, path = "./scrapy-package"}
+
+[dev-packages]
+pre-commit = "*"
 
 [requires]
-python_version = "3"
