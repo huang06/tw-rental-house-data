@@ -9,12 +9,12 @@
 
 本專案總共分為兩部份：
 
-- 爬蟲本人，只需要 Scrapy 即可使用，不綁資料庫。
-  - [原始碼](https://github.com/g0v/tw-rental-house-data/tree/master/scrapy-package)
-  - [套件網頁](https://pypi.org/project/scrapy-tw-rental-house/)
-- 完整的開放資料流程，包含爬蟲、資料儲存、網頁。
-  - [原始碼](https://github.com/g0v/tw-rental-house-data)
-  - [網站](https://rentalhouse.g0v.ddio.io)
+1. 爬蟲本人，只需要 Scrapy 即可使用，不綁資料庫。
+   - [原始碼](https://github.com/g0v/tw-rental-house-data/tree/master/scrapy-package)
+   - [套件網頁](https://pypi.org/project/scrapy-tw-rental-house/)
+2. 完整的開放資料流程，包含爬蟲、資料儲存、網頁。
+   - [原始碼](https://github.com/g0v/tw-rental-house-data)
+   - [網站](https://rentalhouse.g0v.ddio.io)
 
 本專案還在初期開發階段，任何框架、資料庫定義、API 皆有可能更動。
 
@@ -26,45 +26,48 @@
 
 ### 資料庫與網頁後端
 
-#### 爬蟲環境需求
+#### 環境需求
 
-- Python3.8+
-- pip
-- pipenv
-- Docker V2, which supports `docker compose` command.
+1. Python3.8+
+2. pip
+3. pipenv
+4. [PostgreSQL](https://www.postgresql.org) 9.5+
+   - 使用 PostgresSQL 以外的資料庫時，爬蟲可以順利執行，但使用內建的匯出指令時無法用 `-u --unique` 去除重複物件
+5. GeoDjango ，目前[主要的關聯式資料庫都有支援](https://docs.djangoproject.com/en/2.1/ref/contrib/gis/db-api/)
+   - 關於如何準備 GeoDjango 所需的系統環境，請參見[官方文件](https://docs.djangoproject.com/en/1.10/ref/contrib/gis/install/#installation)
 
 #### 資料庫設定
 
-Install Python packages:
+```sh
+# 使用 pipenv 安裝相關套件
+pipenv install
+pipenv shell
 
-```make
-make python
-```
+cd backend
+# 設定資料庫（預設使用 sqlite）
+## 詳細資訊請見 [Django 官網](https://docs.djangoproject.com/en/2.0/topics/settings/)
+## 如果想用 PostgreSQL 9.3+ ，推薦打開 USE_NATIVE_JSONFIELD ，可以使用內建的 jsonb
+vim backend/settings_local.py
 
-Migrate database:
-
-Add or Overwrite default settings in `backend/settings_local.py`.
-
-```bash
-touch backend/settings_local.py
-```
-
-```bash
-make migrate
+# 設定資料庫
+## 使用 --fake-init 可以讓 Django 跳過已存在的 migration script
+python manage.py migrate
+python manage.py loaddata vendors
 ```
 
 #### 爬蟲使用方式
 
 確定資料庫準備完成後，執行以下步驟：
 
-Configure Scrapy settings:
+```sh
+cd crawler
 
-```bash
+# 設定 Scrapy
 cp crawler/settings.sample.py crawler/settings.py
-```
+vim crawler/settings.py
 
-```bash
-make crawl
+# 開始爬資料
+./go.sh
 ```
 
 #### 資料匯出
@@ -85,9 +88,9 @@ python backend/manage.py export --help
 
 ### 網頁前端
 
-#### 網頁環境需求
+#### 環境需求
 
-- node 8+
+  1. node 8+
 
 #### 使用方式
 
