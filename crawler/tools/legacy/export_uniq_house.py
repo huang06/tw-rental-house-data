@@ -1,25 +1,26 @@
-import sys
-import os
-import csv
 import argparse
+import csv
 import json
+import os
+import sys
 from datetime import datetime, timedelta
-from django.utils import timezone
+
 from django.core.paginator import Paginator
-from django.contrib.postgres.fields.jsonb import KeyTextTransform, KeyTransform
 from django.db import models
+from django.db.models import Count, Max, Min, TextField
+from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Cast
-from django.db.models import Count, Max, Min, Avg, TextField
+from django.utils import timezone
 
-sys.path.append('{}/..'.format(
-    os.path.dirname(os.path.realpath(__file__))))
+sys.path.append(f'{os.path.dirname(os.path.realpath(__file__))}/..')
 
-from tools.utils import load_django
 from tools.json_writer import ListWriter
+from tools.utils import load_django
+
 load_django()
 
-from rental.models import House, HouseEtc, Vendor
 from rental import enums
+from rental.models import House, Vendor
 
 vendor_stats = {'_total': 0}
 page_size = 3000
@@ -28,9 +29,11 @@ vendors = {}
 for vendor in Vendor.objects.all():
     vendors[vendor.id] = vendor.name
 
+
 def lookup_vendor(vendor_id):
     global vendors
     return vendors[vendor_id]
+
 
 structured_headers = [
     {'en': 'n_duplicate', 'zh': '重複物件數', 'annotate': Count('id')},
@@ -38,7 +41,6 @@ structured_headers = [
     {'en': 'min_house_id', 'zh': '最小物件編號', 'annotate': Min('vendor_house_id')},
     {'en': 'max_created', 'zh': '最大物件首次發現時間', 'annotate': Max('created')},
     {'en': 'min_created', 'zh': '最小物件首次發現時間', 'annotate': Min('created')},
-
     {'en': 'vendor', 'zh': '租屋平台', 'fn': lookup_vendor},
     {'en': 'top_region', 'zh': '縣市', 'is_enum': enums.TopRegionType},
     {'en': 'sub_region', 'zh': '鄉鎮市區', 'is_enum': enums.SubRegionType},
@@ -66,25 +68,72 @@ structured_headers = [
     {'en': 'n_bath_room', 'zh': '衛浴數'},
     {'en': 'n_bed_room', 'zh': '房數'},
     {'en': 'n_living_room', 'zh': '客廳數'},
-    {'en': 'apt_feature_code', 'zh': '格局編碼（陽台/衛浴/房/廳）',
-        'fn': lambda x: '_{}'.format(x) if x else ''},
-    {'en': 'additional_fee_eletricity', 'zh': '額外費用_電費？', 'annotate': KeyTextTransform('eletricity','additional_fee')},
-    {'en': 'additional_fee_water', 'zh': '額外費用_水費？', 'annotate': KeyTextTransform('water','additional_fee')},
-    {'en': 'additional_fee_gas', 'zh': '額外費用_瓦斯？', 'annotate': KeyTextTransform('gas','additional_fee')},
-    {'en': 'additional_fee_internet', 'zh': '額外費用_網路？', 'annotate': KeyTextTransform('internet','additional_fee')},
-    {'en': 'additional_fee_cable_tv', 'zh': '額外費用_第四台？', 'annotate': KeyTextTransform('cable_tv','additional_fee')},
-    {'en': 'living_functions_school', 'zh': '附近有_學校？', 'annotate': KeyTextTransform('school','living_functions')},
-    {'en': 'living_functions_park', 'zh': '附近有_公園？', 'annotate': KeyTextTransform('park','living_functions')},
-    {'en': 'living_functions_dept_store', 'zh': '附近有_百貨公司？', 'annotate': KeyTextTransform('dept_store','living_functions')},
-    {'en': 'living_functions_conv_store', 'zh': '附近有_超商？', 'annotate': KeyTextTransform('conv_store','living_functions')},
-    {'en': 'living_functions_traditional_mkt', 'zh': '附近有_傳統市場？', 'annotate': KeyTextTransform('traditional_mkt','living_functions')},
-    {'en': 'living_functions_night_mkt', 'zh': '附近有_夜市？', 'annotate': KeyTextTransform('night_mkt','living_functions')},
-    {'en': 'living_functions_hospital', 'zh': '附近有_醫療機構？', 'annotate': KeyTextTransform('hospital','living_functions')},
-    {'en': 'transportation_subway', 'zh': '附近的捷運站數', 'annotate': KeyTextTransform('subway','transportation')},
-    {'en': 'transportation_bus', 'zh': '附近的公車站數', 'annotate': KeyTextTransform('bus','transportation')},
-    {'en': 'transportation_train', 'zh': '附近的火車站數', 'annotate': KeyTextTransform('train','transportation')},
-    {'en': 'transportation_hsr', 'zh': '附近的高鐵站數', 'annotate': KeyTextTransform('hsr','transportation')},
-    {'en': 'transportation_public_bike', 'zh': '附近的公共自行車數（實驗中）', 'annotate': KeyTextTransform('public_bike','transportation')},
+    {'en': 'apt_feature_code', 'zh': '格局編碼（陽台/衛浴/房/廳）', 'fn': lambda x: f'_{x}' if x else ''},
+    {
+        'en': 'additional_fee_eletricity',
+        'zh': '額外費用_電費？',
+        'annotate': KeyTextTransform('eletricity', 'additional_fee'),
+    },
+    {'en': 'additional_fee_water', 'zh': '額外費用_水費？', 'annotate': KeyTextTransform('water', 'additional_fee')},
+    {'en': 'additional_fee_gas', 'zh': '額外費用_瓦斯？', 'annotate': KeyTextTransform('gas', 'additional_fee')},
+    {
+        'en': 'additional_fee_internet',
+        'zh': '額外費用_網路？',
+        'annotate': KeyTextTransform('internet', 'additional_fee'),
+    },
+    {
+        'en': 'additional_fee_cable_tv',
+        'zh': '額外費用_第四台？',
+        'annotate': KeyTextTransform('cable_tv', 'additional_fee'),
+    },
+    {
+        'en': 'living_functions_school',
+        'zh': '附近有_學校？',
+        'annotate': KeyTextTransform('school', 'living_functions'),
+    },
+    {
+        'en': 'living_functions_park',
+        'zh': '附近有_公園？',
+        'annotate': KeyTextTransform('park', 'living_functions'),
+    },
+    {
+        'en': 'living_functions_dept_store',
+        'zh': '附近有_百貨公司？',
+        'annotate': KeyTextTransform('dept_store', 'living_functions'),
+    },
+    {
+        'en': 'living_functions_conv_store',
+        'zh': '附近有_超商？',
+        'annotate': KeyTextTransform('conv_store', 'living_functions'),
+    },
+    {
+        'en': 'living_functions_traditional_mkt',
+        'zh': '附近有_傳統市場？',
+        'annotate': KeyTextTransform('traditional_mkt', 'living_functions'),
+    },
+    {
+        'en': 'living_functions_night_mkt',
+        'zh': '附近有_夜市？',
+        'annotate': KeyTextTransform('night_mkt', 'living_functions'),
+    },
+    {
+        'en': 'living_functions_hospital',
+        'zh': '附近有_醫療機構？',
+        'annotate': KeyTextTransform('hospital', 'living_functions'),
+    },
+    {
+        'en': 'transportation_subway',
+        'zh': '附近的捷運站數',
+        'annotate': KeyTextTransform('subway', 'transportation'),
+    },
+    {'en': 'transportation_bus', 'zh': '附近的公車站數', 'annotate': KeyTextTransform('bus', 'transportation')},
+    {'en': 'transportation_train', 'zh': '附近的火車站數', 'annotate': KeyTextTransform('train', 'transportation')},
+    {'en': 'transportation_hsr', 'zh': '附近的高鐵站數', 'annotate': KeyTextTransform('hsr', 'transportation')},
+    {
+        'en': 'transportation_public_bike',
+        'zh': '附近的公共自行車數（實驗中）',
+        'annotate': KeyTextTransform('public_bike', 'transportation'),
+    },
     # {
     #     'en': 'tenant_restriction',
     #     'zh': '身份限制',
@@ -107,16 +156,14 @@ structured_headers = [
     {'en': 'agent_org', 'zh': '仲介資訊'},
 ]
 
-facilities = [
-    '床', '桌子', '椅子', '電視', '熱水器', '冷氣',
-    '沙發', '洗衣機', '衣櫃', '冰箱', '網路', '第四台', '天然瓦斯'
-]
+facilities = ['床', '桌子', '椅子', '電視', '熱水器', '冷氣', '沙發', '洗衣機', '衣櫃', '冰箱', '網路', '第四台', '天然瓦斯']
+
 
 def gen_facility_header(facility):
     return {
-        'en': 'facilities_{}'.format(facility),
-        'zh': '提供家具_{}？'.format(facility),
-        'annotate': KeyTextTransform(facility,'facilities'),
+        'en': f'facilities_{facility}',
+        'zh': f'提供家具_{facility}？',
+        'annotate': KeyTextTransform(facility, 'facilities'),
     }
 
 
@@ -126,7 +173,7 @@ for facility in facilities:
 
 def print_header(print_enum=True, file_name='rental_house'):
     global structured_headers
-    zh_csv = open('{}.csv'.format(file_name), 'w')
+    zh_csv = open(f'{file_name}.csv', 'w')
 
     zh_writer = csv.writer(zh_csv)
 
@@ -148,7 +195,8 @@ def print_header(print_enum=True, file_name='rental_house'):
 
     return zh_writer
 
-def prepare_houses(from_date, to_date, only_liudu = False):
+
+def prepare_houses(from_date, to_date, only_liudu=False):
     global page_size
     search_values = []
     search_annotates = {}
@@ -171,39 +219,35 @@ def prepare_houses(from_date, to_date, only_liudu = False):
         else:
             search_values.append(header['en'])
 
-    houses = House.objects.values(
-        *search_values
-    ).annotate(
-        **search_annotates
-    ).filter(
-        additional_fee__isnull=False,
-        building_type__in=[
-            enums.BuildingType.公寓,
-            enums.BuildingType.透天,
-            enums.BuildingType.電梯大樓
-        ],
-        property_type__in=[
-            enums.PropertyType.整層住家,
-            enums.PropertyType.獨立套房,
-            enums.PropertyType.分租套房,
-            enums.PropertyType.雅房
-        ],
-        **optional_filter,
-        total_floor__lt=90,
-        floor__lt=90,
-        floor__lte=(models.F('total_floor')+2),
-        floor_ping__lt=500,
-        per_ping_price__lte=15000,
-        created__lte=to_date,
-        crawled_at__gte=from_date,
-    ).order_by(
-        'max_house_id'
+    houses = (
+        House.objects.values(*search_values)
+        .annotate(**search_annotates)
+        .filter(
+            additional_fee__isnull=False,
+            building_type__in=[enums.BuildingType.公寓, enums.BuildingType.透天, enums.BuildingType.電梯大樓],
+            property_type__in=[
+                enums.PropertyType.整層住家,
+                enums.PropertyType.獨立套房,
+                enums.PropertyType.分租套房,
+                enums.PropertyType.雅房,
+            ],
+            **optional_filter,
+            total_floor__lt=90,
+            floor__lt=90,
+            floor__lte=(models.F('total_floor') + 2),
+            floor_ping__lt=500,
+            per_ping_price__lte=15000,
+            created__lte=to_date,
+            crawled_at__gte=from_date,
+        )
+        .order_by('max_house_id')
     )
 
     # print(houses.query)
 
     paginator = Paginator(houses, page_size)
     return paginator
+
 
 def normalize_val(val, header, use_tf):
     json_val = val
@@ -215,7 +259,7 @@ def normalize_val(val, header, use_tf):
     if type(val) is datetime:
         val = timezone.localtime(val).strftime('%Y-%m-%d %H:%M:%S %Z')
         json_val = val
-    elif val is '' or val is None:
+    elif val == '' or val is None:
         val = '-'
         json_val = None
     elif val is True or val == 'true':
@@ -226,6 +270,7 @@ def normalize_val(val, header, use_tf):
         json_val = False
 
     return val, json_val
+
 
 def print_body(writer, houses, print_enum=True, use_tf=False, listWriter=None):
     global structured_headers
@@ -276,13 +321,10 @@ def print_body(writer, houses, print_enum=True, use_tf=False, listWriter=None):
         if list_writer:
             try:
                 filename = enums.TopRegionType(house['top_region']).name
-            except:
+            except BaseException:
                 filename = 'default'
 
-            list_writer.write(
-                filename, 
-                obj
-            )
+            list_writer.write(filename, obj)
 
         count += 1
 
@@ -290,19 +332,14 @@ def print_body(writer, houses, print_enum=True, use_tf=False, listWriter=None):
 
 
 def parse_date(input):
-    try: 
+    try:
         return timezone.make_aware(datetime.strptime(input, '%Y%m%d'))
     except ValueError:
-        raise argparse.ArgumentTypeError('Invalid date string: {}'.format(input))
+        raise argparse.ArgumentTypeError(f'Invalid date string: {input}')
+
 
 arg_parser = argparse.ArgumentParser(description='Export house to csv')
-arg_parser.add_argument(
-    '-e',
-    '--enum',
-    default=False,
-    const=True,
-    nargs='?',
-    help='print enumeration or not')
+arg_parser.add_argument('-e', '--enum', default=False, const=True, nargs='?', help='print enumeration or not')
 
 arg_parser.add_argument(
     '-f',
@@ -310,7 +347,7 @@ arg_parser.add_argument(
     dest='from_date',
     default=None,
     type=parse_date,
-    help='from date, format: YYYYMMDD, default today'
+    help='from date, format: YYYYMMDD, default today',
 )
 
 arg_parser.add_argument(
@@ -319,14 +356,11 @@ arg_parser.add_argument(
     dest='to_date',
     default=None,
     type=parse_date,
-    help='to date, format: YYYYMMDD, default today'
+    help='to date, format: YYYYMMDD, default today',
 )
 
 arg_parser.add_argument(
-    '-o',
-    '--outfile',
-    default='rental_house',
-    help='output file name, without postfix(.csv)'
+    '-o', '--outfile', default='rental_house', help='output file name, without postfix(.csv)'
 )
 
 arg_parser.add_argument(
@@ -335,17 +369,10 @@ arg_parser.add_argument(
     default=False,
     const=True,
     nargs='?',
-    help='export json or not, each top region will be put in seperated files'
+    help='export json or not, each top region will be put in seperated files',
 )
 
-arg_parser.add_argument(
-    '-b6',
-    '--liudu',
-    default=False,
-    const=True,
-    nargs='?',
-    help='only export 六都'
-)
+arg_parser.add_argument('-b6', '--liudu', default=False, const=True, nargs='?', help='only export 六都')
 
 arg_parser.add_argument(
     '-01',
@@ -354,13 +381,13 @@ arg_parser.add_argument(
     default=False,
     const=True,
     nargs='?',
-    help='use T/F to express boolean value in csv, instead of 1/0'
+    help='use T/F to express boolean value in csv, instead of 1/0',
 )
 
 if __name__ == '__main__':
 
     args = arg_parser.parse_args()
-    
+
     print_enum = args.enum is not False
     want_json = args.json is not False
     use_tf = args.use_01 is not True
@@ -384,21 +411,21 @@ if __name__ == '__main__':
     if want_json:
         list_writer = ListWriter(args.outfile)
 
-    print('===== Export all houses from {} to {} ====='.format(from_date, to_date))
+    print(f'===== Export all houses from {from_date} to {to_date} =====')
     paginator = prepare_houses(from_date, to_date, liudu)
     total = paginator.count
     current_done = 0
-    
+
     for page_num in paginator.page_range:
         houses = paginator.page(page_num)
         n_raws = print_body(writer, houses, print_enum, use_tf, list_writer)
         current_done += n_raws
-        print('[{}] we have {}/{} rows'.format(datetime.now(), current_done, total))
+        print(f'[{datetime.now()}] we have {current_done}/{total} rows')
 
     if want_json:
         list_writer.closeAll()
 
-    with open('{}.json'.format(args.outfile), 'w') as file:
+    with open(f'{args.outfile}.json', 'w') as file:
         json.dump(vendor_stats, file, ensure_ascii=False)
 
-    print('===== Export done =====\nData: {}.csv\nStatistics: {}.json\n'.format(args.outfile, args.outfile))
+    print(f'===== Export done =====\nData: {args.outfile}.csv\nStatistics: {args.outfile}.json\n')
