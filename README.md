@@ -90,14 +90,22 @@ python backend/manage.py export --help
 
 #### 使用方式
 
-```sh
+```bash
+$ node --version
+v18.4.0
+
+$ npm --version
+8.16.0
+```
+
+```bash
 # 安裝套件
-cd web/ui
+cd ui
 npm install
 
 # 啟動開發環境
+export NODE_OPTIONS=--openssl-legacy-provider
 npm run dev
-
 ```
 
 詳細操作方式，請參見 [nuxt](https://nuxtjs.org/)
