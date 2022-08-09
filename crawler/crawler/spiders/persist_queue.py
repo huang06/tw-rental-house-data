@@ -1,26 +1,19 @@
-import uuid
-import scrapy
 import traceback
-from django.db import connection
-from rental.models import HouseTS, Vendor
-from rental import models
-from crawlerrequest.models import RequestTS
-from crawlerrequest.enums import RequestType
+import uuid
 
-class PersistQueue(object):
+import scrapy
+from crawlerrequest.enums import RequestType
+from crawlerrequest.models import RequestTS
+from django.db import connection
+from rental import models
+from rental.models import HouseTS, Vendor
+
+
+class PersistQueue:
     queue_length = 30
     n_live_spider = 0
 
-    def __init__(
-        self,
-        vendor,
-        is_list,
-        logger,
-        seed_parser,
-        generate_request_args,
-        parse_response,
-        **kwargs
-    ):
+    def __init__(self, vendor, is_list, logger, seed_parser, generate_request_args, parse_response, **kwargs):
         super().__init__(**kwargs)
         y = models.current_year()
         m = models.current_month()
@@ -33,55 +26,40 @@ class PersistQueue(object):
         self.generate_request_args = generate_request_args
         self.parse_response = parse_response
         try:
-            self.vendor = Vendor.objects.get(
-                name = vendor
-            )
+            self.vendor = Vendor.objects.get(name=vendor)
         except Vendor.DoesNotExist:
-            raise Exception('Vendor "{}" is not defined.'.format(vendor))
+            raise Exception(f'Vendor "{vendor}" is not defined.')
 
         if is_list:
             self.request_type = RequestType.LIST
         else:
             self.request_type = RequestType.DETAIL
 
-        self.ts = {
-            'y': y,
-            'm': m,
-            'd': d,
-            'h': h
-        }
+        self.ts = {'y': y, 'm': m, 'd': d, 'h': h}
 
     def has_request(self):
         undone_requests = RequestTS.objects.filter(
-            year = self.ts['y'],
-            month = self.ts['m'],
-            day = self.ts['d'],
-            hour = self.ts['h'],
+            year=self.ts['y'],
+            month=self.ts['m'],
+            day=self.ts['d'],
+            hour=self.ts['h'],
             # Ignore pending request since we will generate new one and rerun it anyway
-            is_pending = False,
-            vendor = self.vendor,
-            request_type = self.request_type
+            is_pending=False,
+            vendor=self.vendor,
+            request_type=self.request_type,
         )[:1]
 
         return undone_requests.count() > 0
 
     def has_record(self):
         today_houses = HouseTS.objects.filter(
-            year = self.ts['y'],
-            month = self.ts['m'],
-            day = self.ts['d'],
-            hour = self.ts['h'],
-            vendor = self.vendor
+            year=self.ts['y'], month=self.ts['m'], day=self.ts['d'], hour=self.ts['h'], vendor=self.vendor
         )[:1]
 
         return today_houses.count() > 0
 
     def gen_persist_request(self, seed):
-        RequestTS.objects.create(
-            request_type=self.request_type,
-            vendor=self.vendor,
-            seed=seed
-        )
+        RequestTS.objects.create(request_type=self.request_type, vendor=self.vendor, seed=seed)
 
     def next_request(self):
         if self.n_live_spider >= self.queue_length:
@@ -97,16 +75,19 @@ class PersistQueue(object):
                 'and day = %s and hour = %s and vendor_id = %s and request_type = %s '
                 'and is_pending = %s and owner is null order by id limit 1)'
             )
-            a = cursor.execute(sql, [
-                self.spider_id,
-                self.ts['y'],
-                self.ts['m'],
-                self.ts['d'],
-                self.ts['h'],
-                self.vendor.id,
-                self.request_type.value,
-                False
-            ])
+            _ = cursor.execute(
+                sql,
+                [
+                    self.spider_id,
+                    self.ts['y'],
+                    self.ts['m'],
+                    self.ts['d'],
+                    self.ts['h'],
+                    self.vendor.id,
+                    self.request_type.value,
+                    False,
+                ],
+            )
 
         next_row = RequestTS.objects.filter(
             year=self.ts['y'],
@@ -116,7 +97,7 @@ class PersistQueue(object):
             vendor=self.vendor,
             request_type=self.request_type,
             is_pending=False,
-            owner=self.spider_id
+            owner=self.spider_id,
         ).order_by('created')
 
         next_row = next_row.first()
@@ -132,16 +113,13 @@ class PersistQueue(object):
 
         request_args = {
             **self.generate_request_args(rental_meta),
-            # overwrite callback directly, 
+            # overwrite callback directly,
             # as we know where to find real parser
-            'callback': self.parser_wrapper
+            'callback': self.parser_wrapper,
         }
 
         if 'meta' not in request_args:
-            request_args['meta'] = {
-                'rental': rental_meta,
-                'db_request': next_row
-            }
+            request_args['meta'] = {'rental': rental_meta, 'db_request': next_row}
         elif 'db_request' not in request_args['meta']:
             request_args['meta']['db_request'] = next_row
 
@@ -160,13 +138,10 @@ class PersistQueue(object):
                     db_request.delete()
                 else:
                     yield item
-        except:
+        except BaseException:
             self.logger.error(
                 'Parser error in {} when handle meta {}. [{}] - {:.128}'.format(
-                    self.vendor.name,
-                    meta,
-                    response.status,
-                    response.text
+                    self.vendor.name, meta, response.status, response.text
                 )
             )
             traceback.print_exc()
