@@ -5,6 +5,7 @@ all:
 
 .PHONY: python
 python:
+	rm -rf .venv
 	python3 -m pip install -U pipenv
 	PIPENV_VENV_IN_PROJECT=1 python3 -m pipenv sync --dev -v
 
