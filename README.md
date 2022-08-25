@@ -1,112 +1,124 @@
 # 開放台灣民間租屋資料
 
-長期收集各租屋網站、品牌公寓的可公開資訊，清洗後整理成格式統一的資料，供後續有需要的人使用。
+## Prerequisites
 
-- 專案資訊請見 [hackpad](https://g0v.hackpad.tw/Ih7Jp4pUD5y)。
-- 爬蟲套件請見 [PyPI](https://pypi.org/project/scrapy-tw-rental-house/)
+- Python3 (tested with 3.10)
+- Docker V2:
+  - Supports `docker compose` command.
+- node 8+
+- gdal
 
-## 程式使用方式與注意事項
+### Installing Geospatial libraries¶
 
-本專案總共分為兩部份：
+<https://docs.djangoproject.com/en/4.0/ref/contrib/gis/install/geolibs/>
 
-1. 爬蟲本人，只需要 Scrapy 即可使用，不綁資料庫。
-   - [原始碼](https://github.com/g0v/tw-rental-house-data/tree/master/scrapy-package)
-   - [套件網頁](https://pypi.org/project/scrapy-tw-rental-house/)
-2. 完整的開放資料流程，包含爬蟲、資料儲存、網頁。
-   - [原始碼](https://github.com/g0v/tw-rental-house-data)
-   - [網站](https://rentalhouse.g0v.ddio.io)
-
-本專案還在初期開發階段，任何框架、資料庫定義、API 皆有可能更動。
-
-關於開發的詳細資訊，請參見[專案 wiki](https://github.com/g0v/tw-rental-house-data/wiki/)
-
-### 爬蟲本人
-
-關於環境需求與使用方式，請見[套件網頁](https://pypi.org/project/scrapy-tw-rental-house/)。
-
-### 資料庫與網頁後端
-
-#### 環境需求
-
-1. Python3.8+
-2. pip
-3. pipenv
-4. [PostgreSQL](https://www.postgresql.org) 9.5+
-   - 使用 PostgresSQL 以外的資料庫時，爬蟲可以順利執行，但使用內建的匯出指令時無法用 `-u --unique` 去除重複物件
-5. GeoDjango ，目前[主要的關聯式資料庫都有支援](https://docs.djangoproject.com/en/2.1/ref/contrib/gis/db-api/)
-   - 關於如何準備 GeoDjango 所需的系統環境，請參見[官方文件](https://docs.djangoproject.com/en/1.10/ref/contrib/gis/install/#installation)
-
-#### 資料庫設定
-
-```sh
-# 使用 pipenv 安裝相關套件
-pipenv install
-pipenv shell
-
-cd backend
-# 設定資料庫（預設使用 sqlite）
-## 詳細資訊請見 [Django 官網](https://docs.djangoproject.com/en/2.0/topics/settings/)
-## 如果想用 PostgreSQL 9.3+ ，推薦打開 USE_NATIVE_JSONFIELD ，可以使用內建的 jsonb
-vim backend/settings_local.py
-
-# 設定資料庫
-## 使用 --fake-init 可以讓 Django 跳過已存在的 migration script
-python manage.py migrate
-python manage.py loaddata vendors
-```
-
-#### 爬蟲使用方式
-
-確定資料庫準備完成後，執行以下步驟：
-
-```sh
-cd crawler
-
-# 設定 Scrapy
-cp crawler/settings.sample.py crawler/settings.py
-vim crawler/settings.py
-
-# 開始爬資料
-./go.sh
-```
-
-#### 資料匯出
+On Ubuntu/Debian:
 
 ```bash
-python backend/manage.py export --help
+sudo apt-get install binutils libproj-dev gdal-bin
 ```
 
-#### 注意事項
+On MacOS:
 
-1. 請友善對待租屋網站，依其個別網站使用規則容許的方式與頻率來查詢資料，建議可使用 Scrapy 內附的
-   [DOWNLOAD_DELAY](https://doc.scrapy.org/en/latest/topics/settings.html#std:setting-DOWNLOAD_DELAY) 或
-   [AUTO_THROTTLING](https://doc.scrapy.org/en/latest/topics/autothrottle.html) 調整爬蟲速度。
-2. 爬蟲以收集各網站可散佈的共同資料欄位為主，不會儲存所有網頁上的欄位。
-3. 使用者使用本專案提供程式來進行公開資訊的分析與調取，其使用行為及後續資訊的利用行為，
-   需符合現行法令的要求且自負其責，包括但不限於個人隱私、資料保護、資訊安全，以及公平競爭等相關規定。
-4. 其他事項請參見[授權頁面](LICENSE)。
+```bash
+```
 
-### 網頁前端
+## Crawler
 
-#### 環境需求
+### Configure Database
 
-  1. node 8+
+Install Python packages:
 
-#### 使用方式
+```make
+make python
+```
 
-```sh
-# 安裝套件
-cd web/ui
+Migrate database:
+
+Add or Overwrite default settings in `backend/backend/settings_local.py`.
+
+```bash
+touch backend/backend/settings_local.py
+```
+
+```bash
+$ make migrate
+
+Operations to perform:
+  Apply all migrations: admin, auth, contenttypes, crawlerrequest, rental, sessions
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying auth.0001_initial... OK
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying rental.0001_initial... OK
+  Applying rental.0002_add_author_hash... OK
+  Applying rental.0003_add_crawled_at... OK
+  Applying rental.0004_fill_crawled_at... OK
+  Applying rental.0005_add_more_building_type... OK
+  Applying crawlerrequest.0001_initial... OK
+  Applying crawlerrequest.0002_crawler_stats... OK
+  Applying crawlerrequest.0003_automic_next_request... OK
+  Applying rental.0006_add_gps... OK
+  Applying rental.0007_more_property_type... OK
+  Applying rental.0008_support_price_range... OK
+  Applying sessions.0001_initial... OK
+Installed 3 object(s) from 1 fixture(s)
+```
+
+### Cofigure crawler settings
+
+Configure Scrapy settings:
+
+```bash
+cp crawler/crawler/settings.sample.py crawler/crawler/settings.py
+```
+
+### Start the crawler
+
+```bash
+cd crawler
+
+pipenv run scrapy crawl list591 -L INFO
+pipenv run scrapy crawl detail591 -L INFO
+pipenv run python ../backend/manage.py syncstateful -ts
+pipenv run python ../backend/manage.py statscheck
+pipenv run python ../backend/manage.py export -p
+```
+
+## Frontend
+
+```bash
+$ node --version
+v18.4.0
+
+$ npm --version
+8.16.0
+```
+
+Install packages.
+
+```bash
+cd ui
 npm install
-
-# 啟動開發環境
-npm run dev
-
 ```
 
-詳細操作方式，請參見 [nuxt](https://nuxtjs.org/)
+launch the web server.
 
-## 非宅界專案貢獻者
-
-- [Lucien C.H. Lin (林誠夏)](lucien.cc)
-- [勞工陣線](http://labor.ngo.tw/) 洪敬舒
+```bash
+export NODE_OPTIONS=--openssl-legacy-provider
+npm run dev
+```
