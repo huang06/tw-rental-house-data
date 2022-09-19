@@ -8,6 +8,14 @@
 - node 8+
 - gdal
 
+### Tracking Upstream Changes
+
+```bash
+git remote add upstream https://github.com/g0v/tw-rental-house-data.git
+git remote set-url --push upstream no_push
+git fetch upstream master --verbose
+```
+
 ### Installing Geospatial libraries¶
 
 <https://docs.djangoproject.com/en/4.0/ref/contrib/gis/install/geolibs/>
