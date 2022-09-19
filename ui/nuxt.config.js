@@ -71,7 +71,7 @@ export default {
     // https://go.nuxtjs.dev/content
     '@nuxt/content',
     'vue-plausible',
-    '@nuxtjs/sentry',
+    '@nuxtjs/sentry'
   ],
 
   // Axios module configuration: https://go.nuxtjs.dev/config-axios
@@ -111,7 +111,8 @@ export default {
   },
 
   plausible: {
-    domain: 'rentalhouse.g0v.ddio.io'
+    domain: 'rentalhouse.g0v.ddio.io',
+    enableAutoOutboundTracking: true
   },
 
   // Content module configuration: https://go.nuxtjs.dev/config-content
